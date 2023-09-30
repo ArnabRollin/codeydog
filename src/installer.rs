@@ -14,11 +14,22 @@ use std::{env, fs};
 pub fn install(pkg: Option<&String>) {
     let pkg_default = String::new();
     let pkg = pkg.unwrap_or(&pkg_default).as_str();
+    let packages = vec!["task-rust", "dwn"];
 
     let _repo = match pkg {
-        "task-rust" => {
+        "" => {
+            eprintln!("Error: Please provide a package to install!");
+            exit(1)
+        }
+        pkg => {
+            if !packages.contains(&pkg) {
+                eprintln!("Error: Package `{pkg}` not found!");
+                exit(1);
+            }
             let home = env::var("HOME").expect("Error: HOME directory not found!");
-            let install_dir = Path::new(&home).join(".codeydog_tools/").join("task-rust/");
+            let install_dir = Path::new(&home)
+                .join(".codeydog_tools/")
+                .join(format!("{}/", pkg));
             let tool_dir = Path::new(&home).join(".codeydog/");
 
             match fs::create_dir_all(&tool_dir) {
@@ -26,7 +37,14 @@ pub fn install(pkg: Option<&String>) {
                 Err(e) => eprintln!("{}", e),
             }
 
-            clone_repo("https://github.com/ArnabRollin/Task-rust", &install_dir);
+            clone_repo(
+                format!(
+                    "https://github.com/ArnabRollin/{}",
+                    if pkg == "task-rust" { "Task-rust" } else { pkg }
+                )
+                .as_str(),
+                &install_dir,
+            );
             match Command::new("cargo")
                 .arg("build")
                 .arg("--release")
@@ -44,8 +62,11 @@ pub fn install(pkg: Option<&String>) {
 
             println!("Copying binary to binaries directory...");
             match fs::copy(
-                install_dir.join("target/release/task"),
-                install_dir.join(tool_dir.join("task")),
+                install_dir.join(format!(
+                    "target/release/{}",
+                    if pkg == "task-rust" { "task" } else { pkg }
+                )),
+                install_dir.join(tool_dir.join(if pkg == "task-rust" { "task" } else { pkg })),
             ) {
                 Ok(_) => {}
                 Err(e) => eprintln!("{}", e),
@@ -53,8 +74,8 @@ pub fn install(pkg: Option<&String>) {
 
             println!("Done!");
 
-            println!("Use `codeydog activate task` to use this tool.");
-            println!("Note: If you still can't access the binary using `task`, the Activated binaries directory might not be included in the PATH.");
+            println!("Use `codeydog activate {pkg}` to use this tool.");
+            println!("Note: If you still can't access the binary using `{pkg}`, the Activated binaries directory might not be included in the PATH.");
             println!(
                 "Please use `echo 'export PATH=\"{}:${{PATH}}\"' >> [your_config_file]` and reload your terminal to add it to the PATH. (Replace [your_config_file] with your config file e.g. `.zshrc`",
                 tool_dir
@@ -62,14 +83,6 @@ pub fn install(pkg: Option<&String>) {
                     .to_str()
                     .expect("Error: Tool install dir is not valid unicode!")
             )
-        }
-        "" => {
-            eprintln!("Error: Please provide a package to install!");
-            exit(1)
-        }
-        package => {
-            eprintln!("Error: Package {package} not found!");
-            exit(1)
         }
     };
 }

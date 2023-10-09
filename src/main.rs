@@ -4,7 +4,7 @@
 use about::{about, help};
 use activator::{activate, deactivate};
 use argparser::argparse;
-use installer::install;
+use installer::{install, reinstall};
 use std::{env::args, process::exit};
 
 mod about;
@@ -35,6 +35,7 @@ fn main() {
     match arguments.command.as_str() {
         "help" => help(arguments.arguments.get(0)),
         "install" => install(arguments.arguments.get(0)),
+        "reinstall" => reinstall(arguments.arguments.get(0)),
         "activate" => activate(arguments.arguments.get(0)),
         "deactivate" => deactivate(arguments.arguments.get(0)),
         unknown_command => eprintln!("Unknown command: {}", unknown_command),
